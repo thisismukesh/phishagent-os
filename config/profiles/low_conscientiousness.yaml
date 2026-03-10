@@ -1,0 +1,16 @@
+name: "Jordan Rivera"
+personality:
+  openness: 0.6
+  conscientiousness: 0.2
+  extraversion: 0.5
+  agreeableness: 0.6
+  neuroticism: 0.7
+communication_style: "casual"
+security_awareness: "low"
+interests:
+  - "gaming"
+  - "music"
+  - "social media"
+occupation: "graphic designer"
+tech_proficiency: 0.8
+impulsivity: 0.8

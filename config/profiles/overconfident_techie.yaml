@@ -1,0 +1,16 @@
+name: "Sam Patel"
+personality:
+  openness: 0.7
+  conscientiousness: 0.5
+  extraversion: 0.6
+  agreeableness: 0.4
+  neuroticism: 0.3
+communication_style: "terse"
+security_awareness: "medium"
+interests:
+  - "programming"
+  - "cybersecurity"
+  - "hardware"
+occupation: "software engineer"
+tech_proficiency: 0.9
+impulsivity: 0.4

@@ -1,0 +1,16 @@
+name: "Alex Chen"
+personality:
+  openness: 0.5
+  conscientiousness: 0.4
+  extraversion: 0.7
+  agreeableness: 0.9
+  neuroticism: 0.6
+communication_style: "casual"
+security_awareness: "low"
+interests:
+  - "sports"
+  - "technology"
+  - "cooking"
+occupation: "marketing manager"
+tech_proficiency: 0.7
+impulsivity: 0.6
