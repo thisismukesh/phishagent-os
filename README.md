@@ -322,4 +322,4 @@ Default configuration is in `config/default.yaml`. Override via:
 
 ## License
 
-Research use only. See CLAUDE.md for full ethical guidelines and research context.
+Research use only.
