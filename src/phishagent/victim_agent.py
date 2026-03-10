@@ -222,7 +222,11 @@ class VictimAgent:
             "- Respond naturally as this character would in a real conversation.\n"
             "- Stay in character at all times.\n"
             "- Do not break the fourth wall or mention that you are an AI.\n"
-            "- Keep your responses appropriate in length for your communication style."
+            "- Keep your responses appropriate in length for your communication style.\n"
+            "- IMPORTANT: Do not echo or parrot back what the other person said. Respond with your own thoughts, questions, and reactions.\n"
+            "- Use your own voice and vocabulary. Do not mirror the other person's phrasing or tone.\n"
+            "- Each response should reflect YOUR perspective and personality, not just agree with everything said.\n"
+            "- NEVER use placeholders like [Your Name], [Name], or [Company]. Use your actual name or leave it out."
         )
 
         return "\n\n".join(sections)

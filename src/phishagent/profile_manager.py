@@ -26,6 +26,9 @@ class ProfileManager:
         with open(filepath) as f:
             data = yaml.safe_load(f)
 
+        if not data or not isinstance(data, dict):
+            raise ValueError(f"Profile file is empty or not a valid YAML mapping: {path}")
+
         profile = VictimProfile(**data)
         logger.info(f"Loaded profile '{profile.name}' from {path}")
         return profile
@@ -38,6 +41,9 @@ class ProfileManager:
 
         with open(filepath) as f:
             data = yaml.safe_load(f)
+
+        if not data:
+            raise ValueError(f"Profiles file is empty: {path}")
 
         if isinstance(data, list):
             profiles = [VictimProfile(**item) for item in data]
@@ -124,5 +130,9 @@ class ProfileManager:
         parts = field_path.split(".")
         current = data
         for part in parts[:-1]:
+            if not isinstance(current, dict) or part not in current:
+                raise KeyError(f"Invalid field path '{field_path}': key '{part}' not found")
             current = current[part]
+        if not isinstance(current, dict):
+            raise KeyError(f"Invalid field path '{field_path}': cannot set on non-dict")
         current[parts[-1]] = value

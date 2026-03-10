@@ -121,7 +121,7 @@ class AttackerConfig(BaseModel):
     strategy: AttackStrategy
     scenario: AttackerScenario
     max_turns: int = Field(
-        default=10, ge=3, le=30, description="Max conversation turns before forced termination"
+        default=10, ge=3, le=10, description="Max conversation turns before forced termination"
     )
     escalation_threshold: int = Field(
         default=5, description="Turn at which attacker escalates tactics"

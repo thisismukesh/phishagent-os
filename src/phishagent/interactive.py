@@ -169,9 +169,9 @@ def interactive_single_run(app_config: AppConfig) -> None:
     )
 
     max_turns = _prompt_int_range(
-        "Max conversation turns (3–30)",
+        "Max conversation turns (3–10)",
         3,
-        30,
+        10,
         default=app_config.conversation.max_turns,
     )
 
@@ -294,12 +294,19 @@ def interactive_batch_run(app_config: AppConfig) -> None:
     reps_raw = Prompt.ask("  Repetitions", default=str(default_reps))
     try:
         repetitions = max(1, int(reps_raw))
-    except ValueError:
+    except (ValueError, TypeError):
         repetitions = default_reps
 
     # Build profiles and attacker configs from the spec
     pm = ProfileManager()
-    base_profile = VictimProfile(**exp_data["base_profile"])
+    if not exp_data or "base_profile" not in exp_data:
+        console.print("[red]Experiment config is missing 'base_profile'.[/red]")
+        return
+    try:
+        base_profile = VictimProfile(**exp_data["base_profile"])
+    except Exception as e:
+        console.print(f"[red]Invalid base_profile in experiment config: {e}[/red]")
+        return
     vary = exp_data.get("vary", {})
     profiles = pm.generate_factorial_profiles(FactorialSpec(base_profile=base_profile, vary=vary)) if vary else [base_profile]
     attacker_configs = [AttackerConfig(**ac) for ac in exp_data.get("attacker_configs", [])]
@@ -624,7 +631,15 @@ def _display_experiment_csv(fpath: Path) -> None:
 
     # Score summary
     def _floats(col: str) -> list[float]:
-        return [float(r[col]) for r in rows if r.get(col)]
+        result = []
+        for r in rows:
+            val = r.get(col)
+            if val:
+                try:
+                    result.append(float(val))
+                except (ValueError, TypeError):
+                    pass
+        return result
 
     persuasion = _floats("persuasion")
     coherence = _floats("coherence")
@@ -830,17 +845,33 @@ def _display_result_summary(result: ConversationResult) -> None:
 
     if result.scores:
         table.add_section()
-        table.add_row("Persuasion Score", f"{result.scores.persuasion:.2f}")
-        table.add_row("Coherence Score", f"{result.scores.coherence:.2f}")
-        table.add_row("Detectability Score", f"{result.scores.detectability:.2f}")
-        table.add_row("Composite Score", f"[cyan]{result.scores.composite:.2f}[/cyan]")
+        table.add_row(
+            "Persuasion",
+            f"{result.scores.persuasion:.2f}  [dim]— how effectively the attacker convinced the victim (0=failed, 1=total success)[/dim]",
+        )
+        table.add_row(
+            "Coherence",
+            f"{result.scores.coherence:.2f}  [dim]— how natural and realistic the dialogue felt (0=nonsensical, 1=indistinguishable from real)[/dim]",
+        )
+        table.add_row(
+            "Detectability",
+            f"{result.scores.detectability:.2f}  [dim]— how obvious the attack was (0=completely stealthy, 1=blatantly malicious)[/dim]",
+        )
+        table.add_row(
+            "Composite",
+            f"[cyan]{result.scores.composite:.2f}[/cyan]  [dim]— weighted overall score (high persuasion + high coherence + LOW detectability = high composite)[/dim]",
+        )
 
     console.print(table)
 
-    # Print a brief rationale if available
-    if result.scores and result.scores.persuasion_rationale:
-        short = result.scores.persuasion_rationale[:200]
-        console.print(f"\n[dim]Persuasion rationale:[/dim] {short}")
+    # Print rationales if available
+    if result.scores:
+        if result.scores.persuasion_rationale:
+            console.print(f"\n[dim]Persuasion rationale:[/dim] {result.scores.persuasion_rationale}")
+        if result.scores.coherence_rationale:
+            console.print(f"\n[dim]Coherence rationale:[/dim] {result.scores.coherence_rationale}")
+        if result.scores.detectability_rationale:
+            console.print(f"\n[dim]Detectability rationale:[/dim] {result.scores.detectability_rationale}")
 
 
 def _print_scores_table(scores: dict) -> None:
@@ -886,7 +917,7 @@ def _prompt_int_range(label: str, min_val: int, max_val: int, default: Optional[
             if min_val <= val <= max_val:
                 return val
             console.print(f"  [red]Please enter a number between {min_val} and {max_val}.[/red]")
-        except ValueError:
+        except (ValueError, TypeError):
             console.print("  [red]Invalid input. Please enter a whole number.[/red]")
 
 
@@ -899,7 +930,7 @@ def _prompt_float(label: str, min_val: float = 0.0, max_val: float = 1.0, defaul
             if min_val <= val <= max_val:
                 return round(val, 3)
             console.print(f"  [red]Value must be between {min_val:.1f} and {max_val:.1f}.[/red]")
-        except ValueError:
+        except (ValueError, TypeError):
             console.print("  [red]Invalid input. Please enter a decimal number (e.g. 0.7).[/red]")
 
 
@@ -907,7 +938,7 @@ def _prompt_string(label: str, default: Optional[str] = None, required: bool = T
     """Prompt for a non-empty string, re-prompting if required and blank."""
     while True:
         raw = Prompt.ask(f"  {label}", default=default or "")
-        val = raw.strip()
+        val = (raw or "").strip()
         if val or not required:
             return val
         console.print("  [red]This field is required.[/red]")

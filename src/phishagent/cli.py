@@ -177,13 +177,26 @@ def experiment(ctx, experiment_config, model, repetitions, output):
         console.print(f"[red]Error loading experiment config: {e}[/red]")
         sys.exit(1)
 
+    if not exp_data or not isinstance(exp_data, dict):
+        console.print("[red]Experiment config file is empty or invalid.[/red]")
+        sys.exit(1)
+
+    for required_key in ("experiment_id", "base_profile"):
+        if required_key not in exp_data:
+            console.print(f"[red]Experiment config missing required key: '{required_key}'[/red]")
+            sys.exit(1)
+
     # Parse factorial specification
     model_name = model or exp_data.get("model_name", app_config.model.name)
     reps = repetitions or exp_data.get("repetitions", 3)
 
     # Generate profiles from factorial spec
     pm = ProfileManager()
-    base_profile = VictimProfile(**exp_data["base_profile"])
+    try:
+        base_profile = VictimProfile(**exp_data["base_profile"])
+    except Exception as e:
+        console.print(f"[red]Invalid base_profile in experiment config: {e}[/red]")
+        sys.exit(1)
     vary = exp_data.get("vary", {})
 
     if vary:

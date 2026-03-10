@@ -74,10 +74,10 @@ class OllamaClient:
         data = self._request_with_retry("POST", "/api/generate", payload)
 
         return LLMResponse(
-            content=data.get("response", ""),
-            model=data.get("model", model),
-            token_count=data.get("eval_count", 0) + data.get("prompt_eval_count", 0),
-            duration_ms=data.get("total_duration", 0) // 1_000_000,  # nanoseconds → ms
+            content=data.get("response") or "",
+            model=data.get("model") or model,
+            token_count=(data.get("eval_count") or 0) + (data.get("prompt_eval_count") or 0),
+            duration_ms=(data.get("total_duration") or 0) // 1_000_000,  # nanoseconds → ms
             done=data.get("done", True),
         )
 
@@ -107,13 +107,13 @@ class OllamaClient:
 
         data = self._request_with_retry("POST", "/api/chat", payload)
 
-        message_content = data.get("message", {}).get("content", "")
+        message_content = (data.get("message") or {}).get("content") or ""
 
         return LLMResponse(
             content=message_content,
-            model=data.get("model", model),
-            token_count=data.get("eval_count", 0) + data.get("prompt_eval_count", 0),
-            duration_ms=data.get("total_duration", 0) // 1_000_000,
+            model=data.get("model") or model,
+            token_count=(data.get("eval_count") or 0) + (data.get("prompt_eval_count") or 0),
+            duration_ms=(data.get("total_duration") or 0) // 1_000_000,
             done=data.get("done", True),
         )
 

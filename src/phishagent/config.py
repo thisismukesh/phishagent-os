@@ -83,14 +83,18 @@ def _apply_env_overrides(data: dict) -> dict:
             if section not in data:
                 data[section] = {}
             # Attempt type coercion for numeric fields
-            if field in ("temperature", "judge_temperature", "turn_delay_seconds"):
-                data[section][field] = float(value)
-            elif field in ("max_tokens", "timeout_seconds", "max_turns"):
-                data[section][field] = int(value)
-            elif field in ("early_termination", "save_conversations", "save_csv"):
-                data[section][field] = value.lower() in ("true", "1", "yes")
-            else:
-                data[section][field] = value
+            try:
+                if field in ("temperature", "judge_temperature", "turn_delay_seconds"):
+                    data[section][field] = float(value)
+                elif field in ("max_tokens", "timeout_seconds", "max_turns"):
+                    data[section][field] = int(value)
+                elif field in ("early_termination", "save_conversations", "save_csv"):
+                    data[section][field] = value.lower() in ("true", "1", "yes")
+                else:
+                    data[section][field] = value
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid value for {env_var}={value!r}, skipping")
+                continue
             logger.debug(f"Env override: {env_var} → {section}.{field} = {value}")
     return data
 
