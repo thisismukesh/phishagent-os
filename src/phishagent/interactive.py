@@ -747,15 +747,16 @@ def build_profile_interactive() -> Optional[VictimProfile]:
     sec_awareness = _prompt_enum_choice("Security Awareness", SecurityAwareness)
 
     console.print("\n  [bold]Big Five Personality Traits[/bold] [dim](0.0 = low, 1.0 = high)[/dim]")
-    openness = _prompt_float("  Openness (curiosity, willingness to try new things)", default=0.5)
-    conscientiousness = _prompt_float("  Conscientiousness (carefulness, self-discipline)", default=0.5)
-    extraversion = _prompt_float("  Extraversion (sociability, talkativeness)", default=0.5)
-    agreeableness = _prompt_float("  Agreeableness (trustingness, cooperativeness)", default=0.5)
-    neuroticism = _prompt_float("  Neuroticism (anxiety, emotional sensitivity)", default=0.5)
+    console.print("  [dim]These shape how the victim responds to the attacker's social engineering attempts.[/dim]")
+    openness = _prompt_float("  Openness (high = curious about novel requests, low = sticks to routine)", default=0.5)
+    conscientiousness = _prompt_float("  Conscientiousness (high = verifies before acting, low = acts on impulse)", default=0.5)
+    extraversion = _prompt_float("  Extraversion (high = chatty and shares freely, low = reserved)", default=0.5)
+    agreeableness = _prompt_float("  Agreeableness (high = trusting and cooperative, low = skeptical)", default=0.5)
+    neuroticism = _prompt_float("  Neuroticism (high = anxious, may rush to resolve pressure, low = calm under pressure)", default=0.5)
 
     console.print("\n  [bold]Additional Traits[/bold]")
-    tech_proficiency = _prompt_float("  Tech proficiency (0=none, 1=expert)", default=0.5)
-    impulsivity = _prompt_float("  Impulsivity (0=deliberate, 1=impulsive)", default=0.5)
+    tech_proficiency = _prompt_float("  Tech proficiency (high = overconfident, paradoxically more vulnerable)", default=0.5)
+    impulsivity = _prompt_float("  Impulsivity (high = responds without thinking, low = deliberate)", default=0.5)
 
     try:
         return VictimProfile(
