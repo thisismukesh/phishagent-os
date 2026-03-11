@@ -11,7 +11,7 @@ conversation:
   early_termination: true
 
 scoring:
-  judge_model: "mistral:7b"
+  judge_model: "llama3.2"
   persuasion_weight: 0.4
   coherence_weight: 0.3
   detectability_weight: 0.3

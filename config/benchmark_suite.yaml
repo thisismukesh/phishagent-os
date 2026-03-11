@@ -1,0 +1,108 @@
+# PhishAgent-OS Benchmark Validation Suite
+#
+# This is an EXAMPLE suite. Write your own or modify this one.
+# The benchmark code doesn't care what's in here — it just runs
+# experiments and computes metrics on the results.
+#
+# The "hypotheses" section defines expected orderings based on
+# published literature. After running, the benchmark checks whether
+# the simulator's results match these orderings.
+
+experiment_id: "benchmark_v1"
+description: >
+  Trait combination benchmark: 4 factors × 2 levels × 3 strategies × 5 reps
+  = 240 conversations. Tests which personality traits and combinations
+  predict vulnerability to social engineering, grounded in Heliyon (2025),
+  Denisenko (2026), and Muhanad (2025).
+
+model_name: "mistral:7b"
+repetitions: 5
+
+# ── Victim profiles ─────────────────────────────────────────────────────────
+# Base profile: all traits at neutral (0.5 / medium).
+# We vary 4 key factors at low/high to test main effects + combinations.
+# Held constant: openness, extraversion, neuroticism, tech_proficiency
+# (weakest predictors in the cited literature; study in follow-up suites).
+
+base_profile:
+  name: "Benchmark Baseline"
+  personality:
+    openness: 0.5
+    conscientiousness: 0.5
+    extraversion: 0.5
+    agreeableness: 0.5
+    neuroticism: 0.5
+  communication_style: "casual"
+  security_awareness: "medium"
+  interests: ["technology", "sports"]
+  occupation: "software engineer"
+  tech_proficiency: 0.5
+  impulsivity: 0.5
+
+# 2^4 = 16 profiles via Cartesian product
+vary:
+  personality.agreeableness: [0.2, 0.8]
+  personality.conscientiousness: [0.2, 0.8]
+  security_awareness: ["low", "high"]
+  impulsivity: [0.2, 0.8]
+
+# ── Attacker configs ────────────────────────────────────────────────────────
+# Three strategy archetypes covering pressure, trust, and hierarchy.
+
+attacker_configs:
+  - goal: "click_link"
+    strategy: "urgency"
+    scenario: "it_support"
+    max_turns: 10
+    escalation_threshold: 5
+
+  - goal: "click_link"
+    strategy: "authority"
+    scenario: "it_support"
+    max_turns: 10
+    escalation_threshold: 5
+
+  - goal: "click_link"
+    strategy: "rapport"
+    scenario: "colleague"
+    max_turns: 10
+    escalation_threshold: 5
+
+# ── Hypotheses ──────────────────────────────────────────────────────────────
+# Expected orderings from HIGHEST to LOWEST metric value.
+# check_ordering() tests each one and reports concordance.
+
+hypotheses:
+  # Single-trait main effects
+  - name: "Agreeableness increases vulnerability"
+    description: "Heliyon (2025): agreeableness positively associated with phishing susceptibility"
+    group_by: "personality.agreeableness"
+    expected_order: ["0.8", "0.2"]
+    metric: "asr"
+
+  - name: "Conscientiousness protects"
+    description: "Heliyon (2025): conscientiousness negatively associated with phishing susceptibility"
+    group_by: "personality.conscientiousness"
+    expected_order: ["0.2", "0.8"]
+    metric: "asr"
+
+  - name: "Security awareness protects"
+    description: "Muhanad et al. (2025): risk-aware targets resist regardless of personality"
+    group_by: "security_awareness"
+    expected_order: ["low", "high"]
+    metric: "asr"
+
+  - name: "Impulsivity increases vulnerability"
+    description: "Denisenko et al. (2026): impulsive responders more vulnerable to emotional content"
+    group_by: "impulsivity"
+    expected_order: ["0.8", "0.2"]
+    metric: "asr"
+
+  # Strategy effects
+  - name: "Urgency outperforms rapport on low-SA targets"
+    description: "Urgency exploits impulsive compliance; rapport requires time"
+    group_by: "strategy"
+    filter:
+      security_awareness: "low"
+    expected_order: ["urgency", "authority", "rapport"]
+    metric: "asr"

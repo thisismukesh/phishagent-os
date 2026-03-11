@@ -30,7 +30,7 @@ class ConversationConfig(BaseModel):
 
 
 class ScoringConfig(BaseModel):
-    judge_model: str = "mistral:7b"
+    judge_model: str = "llama3.2"
     persuasion_weight: float = 0.4
     coherence_weight: float = 0.3
     detectability_weight: float = 0.3
