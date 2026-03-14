@@ -216,7 +216,9 @@ def experiment(ctx, experiment_config, model, repetitions, output):
         console.print("[red]No attacker configs found in experiment file.[/red]")
         sys.exit(1)
 
-    output_dir = output or f"{app_config.output.base_dir}/experiments/{exp_data['experiment_id']}"
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = output or f"{app_config.output.base_dir}/experiments/{exp_data['experiment_id']}_{timestamp}"
 
     exp_config = ExperimentConfig(
         experiment_id=exp_data["experiment_id"],
@@ -350,7 +352,9 @@ def benchmark(ctx, suite, model, output, skip_run, results_dir):
         sys.exit(1)
 
     experiment_id = suite_data.get("experiment_id", "benchmark")
-    output_dir = output or f"{app_config.output.base_dir}/benchmarks/{experiment_id}"
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = output or f"{app_config.output.base_dir}/benchmarks/{experiment_id}_{timestamp}"
 
     if skip_run:
         # Load existing results
