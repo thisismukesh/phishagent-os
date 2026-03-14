@@ -58,9 +58,11 @@ This opens a guided menu that walks you through every step. No flags needed.
 
 ## Usage
 
-PhishAgent-OS has two interfaces: a guided **interactive mode** for exploratory use and a **CLI mode** for scripting and automation.
+PhishAgent-OS has two interfaces. **If you're just checking it out or running experiments yourself, use the interactive mode** — it's the easiest way in. **If you're building on top of this, connecting it to compute services, or running it at scale, use the CLI flags** — they let you drive everything programmatically without touching a menu.
 
-### Interactive Mode
+### Interactive Mode — for exploring and running experiments
+
+The quickest way to use PhishAgent-OS. No flags, no config files — just a guided menu.
 
 ```bash
 phishagent
@@ -105,7 +107,9 @@ Main Menu
 
 ---
 
-### CLI Mode
+### CLI Mode — for building on top of this
+
+Use this if you're scripting PhishAgent-OS, connecting it to external compute, integrating it into a larger pipeline, or running it on a server where there's no menu to click through.
 
 #### `phishagent run` — Single Conversation
 
