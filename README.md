@@ -244,121 +244,34 @@ PHISHAGENT_SCORING_JUDGE_MODEL=llama3.2 phishagent run ...
 
 ## Benchmark Functions
 
-`src/phishagent/benchmark.py` provides pure computation functions that operate on a list of `ConversationResult` objects. Call `compute_benchmark(results)` to get all metrics at once, or use individual functions for targeted analysis.
+After conversations have been run, the benchmark system analyzes the results and produces a structured report. You can trigger this via `phishagent benchmark` or call the functions directly if you're building on top of the framework.
 
-### Outcome Metrics
+The process works in three stages:
 
-```python
-from phishagent.benchmark import (
-    attack_success_rate,      # fraction of COMPLIANCE + PARTIAL_COMPLIANCE
-    outcome_distribution,     # count per outcome type
-    outcome_rates,            # fraction per outcome type
-    mean_turns_to_outcome,    # average turns (terminal outcomes only)
-)
-```
+**1. Run conversations** — either a fresh experiment or point it at results you already have with `--skip-run`. The benchmark needs a set of conversations to analyze.
 
-### Score Aggregation
+**2. Compute metrics** — the benchmark crunches all the results and produces numbers across several categories:
 
-```python
-from phishagent.benchmark import mean_scores, score_std
-# Returns dict with persuasion, coherence, detectability, composite
-```
+- **Outcome metrics** — what fraction of attacks succeeded overall, how results broke down (compliance vs. refusal vs. suspicion vs. the victim just not falling for it within the turn limit), and how many turns it typically took to reach an outcome
+- **Score summaries** — average persuasion, coherence, and detectability scores across all conversations, plus how much those scores varied (high variation means the judge is inconsistent)
+- **Condition comparisons** — attack success rate broken down by strategy, scenario, goal, and victim security awareness, so you can see which combinations worked best
+- **Trait analysis** — how strongly each victim personality trait predicted whether the attack succeeded, which single traits were most predictive, which trait combinations produced the most (or least) vulnerable victims, and whether any two traits interact in unexpected ways
+- **Strategy × trait grid** — a table showing how each attack strategy performed against each type of victim, so you can see e.g. whether urgency works on low-security victims but fails on high-security ones
 
-### Grouping & Comparison
+**3. Validate hypotheses** — if you declared predictions upfront in your benchmark suite config (e.g. "urgency should outperform rapport"), the benchmark checks whether the actual results matched. It reports each hypothesis as PASS or FAIL, along with a concordance score showing how closely the ordering matched.
 
-```python
-from phishagent.benchmark import group_by, compare_conditions, strategy_x_trait_matrix
+The full report is saved to `benchmark_report.json` in your output directory.
 
-# Compare ASR + refusal/suspicion rates across conditions
-compare_conditions(results, group_fn=lambda r: r.attacker_config.strategy)
+### Benchmark Suite Config
 
-# Cross-tabulation: strategy (rows) × trait bin (columns)
-strategy_x_trait_matrix(results, trait_fn=lambda r: r.victim_profile.personality.agreeableness)
-```
+The benchmark suite config is a file that defines what to run and what you expect to find. It has four parts:
 
-### Trait Analysis
+- **The base victim** — a starting victim profile with all traits set to some default value
+- **What to vary** — which traits to systematically change, and to what values (e.g. test agreeableness at low, medium, and high). The benchmark generates one victim per combination of these values
+- **Attacker configs** — the set of attack strategies and scenarios to test against each victim
+- **Hypotheses** — optional predictions you want to validate, written as an expected ordering (e.g. "I think low security awareness → medium → high should rank highest to lowest in attack success")
 
-```python
-from phishagent.benchmark import (
-    trait_correlation,          # point-biserial correlation with binary success
-    bin_trait,                  # continuous [0,1] → "low" / "medium" / "high"
-    rank_trait_combinations,    # rank all observed trait combos by ASR
-    trait_importance_ranking,   # single-trait predictiveness ranking
-    trait_interaction_effects,  # detect non-additive trait pairs
-)
-```
-
-### Hypothesis Validation
-
-```python
-from phishagent.benchmark import check_ordering
-
-# Returns concordance score and PASS/FAIL per hypothesis
-check_ordering(
-    results,
-    group_fn=lambda r: r.attacker_config.strategy,
-    expected_order=["urgency", "authority", "rapport"],
-    metric="asr",
-)
-```
-
-### All-at-once
-
-```python
-from phishagent.benchmark import compute_benchmark
-
-report = compute_benchmark(results)
-# report contains: asr, outcome_distribution, mean_scores, by_strategy,
-# by_scenario, by_security_awareness, trait_correlations, trait_importance,
-# top_combinations, interaction_effects
-```
-
-### Benchmark Suite YAML
-
-Declare hypotheses to validate automatically:
-
-```yaml
-experiment_id: "benchmark_001"
-description: "Validate trait and strategy effects"
-model_name: "mistral:7b"
-repetitions: 3
-
-base_profile:
-  name: "Victim"
-  personality: { openness: 0.5, conscientiousness: 0.5, extraversion: 0.5, agreeableness: 0.5, neuroticism: 0.5 }
-  communication_style: "casual"
-  security_awareness: "medium"
-  interests: ["technology", "sports"]
-  occupation: "software engineer"
-  tech_proficiency: 0.5
-  impulsivity: 0.5
-
-vary:
-  "personality.agreeableness": [0.2, 0.5, 0.8]
-  "security_awareness": ["low", "high"]
-
-attacker_configs:
-  - { goal: "click_link", strategy: "urgency",    scenario: "it_support", max_turns: 5, escalation_threshold: 3 }
-  - { goal: "click_link", strategy: "rapport",    scenario: "colleague",  max_turns: 5, escalation_threshold: 3 }
-  - { goal: "click_link", strategy: "authority",  scenario: "it_support", max_turns: 5, escalation_threshold: 3 }
-
-hypotheses:
-  - id: "H1"
-    description: "Low security awareness → higher ASR than high"
-    factor: "security_awareness"
-    expected_order: ["low", "medium", "high"]
-    metric: "asr"
-    direction: "descending"
-  - id: "H2"
-    description: "Urgency outperforms rapport"
-    factor: "strategy"
-    expected_order: ["urgency", "authority", "rapport"]
-    metric: "asr"
-    direction: "descending"
-```
-
-**Total conversations** = (product of `vary` values) × (attacker configs) × repetitions.
-The example above: 3 × 2 × 3 × 3 = **54 conversations**.
+Every combination of victim × attacker config × repetitions is run, so the total conversation count can grow quickly.
 
 ---
 
