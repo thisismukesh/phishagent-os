@@ -447,4 +447,4 @@ pytest tests/unit/ --cov=phishagent --cov-report=term-missing
 
 ## License
 
-Research use only.
+Research use only. MIT License.
