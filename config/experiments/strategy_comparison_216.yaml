@@ -1,0 +1,57 @@
+experiment_id: "strategy_comparison_216"
+description: >
+  Strategy comparison: 6 social engineering strategies × 12 victim profiles × 3 reps
+  = 216 conversations. Tests which strategies are most effective against victim profiles
+  varying in agreeableness, impulsivity, and security awareness. Goal: click_link only.
+repetitions: 3
+
+base_profile:
+  name: "Victim"
+  personality:
+    openness: 0.5
+    conscientiousness: 0.5
+    extraversion: 0.5
+    agreeableness: 0.5
+    neuroticism: 0.5
+  communication_style: "casual"
+  security_awareness: "medium"
+  interests: ["technology", "news"]
+  occupation: "office worker"
+  tech_proficiency: 0.5
+  impulsivity: 0.5
+
+vary:
+  "personality.agreeableness": [0.2, 0.8]
+  "impulsivity": [0.2, 0.8]
+  "security_awareness": ["low", "medium", "high"]
+
+attacker_configs:
+  - goal: "click_link"
+    strategy: "authority"
+    scenario: "it_support"
+    max_turns: 10
+
+  - goal: "click_link"
+    strategy: "reciprocity"
+    scenario: "vendor"
+    max_turns: 10
+
+  - goal: "click_link"
+    strategy: "urgency"
+    scenario: "it_support"
+    max_turns: 10
+
+  - goal: "click_link"
+    strategy: "social_proof"
+    scenario: "colleague"
+    max_turns: 10
+
+  - goal: "click_link"
+    strategy: "rapport"
+    scenario: "colleague"
+    max_turns: 10
+
+  - goal: "click_link"
+    strategy: "flattery"
+    scenario: "recruiter"
+    max_turns: 10
