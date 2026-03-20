@@ -497,8 +497,12 @@ def benchmark(ctx, suite, model, output, skip_run, results_dir):
     for trait, corr in sorted(
         report["trait_correlations"].items(), key=lambda x: -abs(x[1])
     ):
-        direction = "[green]+" if corr > 0 else "[red]-" if corr < 0 else " "
-        console.print(f"  {trait:<22s} {direction}{abs(corr):.3f}[/]")
+        if corr > 0:
+            console.print(f"  {trait:<22s} [green]+{abs(corr):.3f}[/green]")
+        elif corr < 0:
+            console.print(f"  {trait:<22s} [red]-{abs(corr):.3f}[/red]")
+        else:
+            console.print(f"  {trait:<22s}  {abs(corr):.3f}")
 
     # Strategy x Security Awareness matrix
     matrix = report["strategy_x_security_awareness"]
