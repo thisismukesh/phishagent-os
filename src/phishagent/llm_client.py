@@ -3,7 +3,10 @@
 No other module touches the network.
 """
 
+import os
+import subprocess
 import time
+from typing import Optional
 
 import httpx
 
@@ -11,6 +14,31 @@ from phishagent.models import LLMResponse
 from phishagent.utils import get_logger
 
 logger = get_logger(__name__)
+
+
+def detect_cuda() -> dict:
+    """Detect CUDA GPU availability by querying nvidia-smi.
+
+    Returns a dict with keys: available (bool), count (int), devices (list[str]).
+    """
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            devices = [line.strip() for line in result.stdout.strip().splitlines() if line.strip()]
+            return {"available": True, "count": len(devices), "devices": devices}
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+
+    # Fallback: check for NVIDIA device files
+    if os.path.exists("/dev/nvidia0"):
+        return {"available": True, "count": 1, "devices": ["NVIDIA GPU"]}
+
+    return {"available": False, "count": 0, "devices": []}
 
 
 # ── Error Hierarchy ─────────────────────────────────────────────────────────────
@@ -44,11 +72,39 @@ _BACKOFF_SECONDS = [1, 2, 4]
 
 
 class OllamaClient:
-    def __init__(self, base_url: str = "http://localhost:11434", timeout: int = 120):
-        """Initialize client. Validates connectivity on construction."""
+    def __init__(
+        self,
+        base_url: str = "http://localhost:11434",
+        timeout: int = 120,
+        num_gpu: Optional[int] = None,
+    ):
+        """Initialize client.
+
+        Args:
+            base_url: Ollama server URL.
+            timeout: Request timeout in seconds.
+            num_gpu: GPU layers to offload. None = auto-detect (uses all GPU layers when
+                CUDA is available, CPU-only otherwise). 0 = force CPU. Positive int = N layers.
+        """
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._client = httpx.Client(timeout=timeout)
+
+        self.cuda_info = detect_cuda()
+
+        if num_gpu is None:
+            # Auto: offload all layers to GPU when CUDA is available
+            self._num_gpu: Optional[int] = 999 if self.cuda_info["available"] else None
+        else:
+            self._num_gpu = num_gpu if num_gpu >= 0 else None  # negative = let Ollama decide
+
+        if self.cuda_info["available"]:
+            logger.info(
+                f"CUDA detected: {self.cuda_info['count']} device(s) — "
+                f"{', '.join(self.cuda_info['devices'])} | num_gpu={self._num_gpu}"
+            )
+        else:
+            logger.info("No CUDA GPU detected — running in CPU-only mode")
 
     def generate(
         self,
@@ -59,14 +115,15 @@ class OllamaClient:
         max_tokens: int = 512,
     ) -> LLMResponse:
         """Send a single completion request via /api/generate."""
+        options: dict = {"temperature": temperature, "num_predict": max_tokens}
+        if self._num_gpu is not None:
+            options["num_gpu"] = self._num_gpu
+
         payload = {
             "model": model,
             "prompt": prompt,
             "stream": False,
-            "options": {
-                "temperature": temperature,
-                "num_predict": max_tokens,
-            },
+            "options": options,
         }
         if system:
             payload["system"] = system
@@ -95,14 +152,15 @@ class OllamaClient:
             chat_messages.append({"role": "system", "content": system})
         chat_messages.extend(messages)
 
+        options: dict = {"temperature": temperature, "num_predict": max_tokens}
+        if self._num_gpu is not None:
+            options["num_gpu"] = self._num_gpu
+
         payload = {
             "model": model,
             "messages": chat_messages,
             "stream": False,
-            "options": {
-                "temperature": temperature,
-                "num_predict": max_tokens,
-            },
+            "options": options,
         }
 
         data = self._request_with_retry("POST", "/api/chat", payload)

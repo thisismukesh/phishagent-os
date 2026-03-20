@@ -21,6 +21,7 @@ class ModelConfig(BaseModel):
     temperature: float = 0.7
     max_tokens: int = 512
     timeout_seconds: int = 120
+    num_gpu: Optional[int] = None  # None = auto (all layers on GPU when CUDA available), 0 = CPU
 
 
 class ConversationConfig(BaseModel):
@@ -67,6 +68,7 @@ _ENV_MAP = {
     "PHISHAGENT_MODEL_TEMPERATURE": ("model", "temperature"),
     "PHISHAGENT_MODEL_MAX_TOKENS": ("model", "max_tokens"),
     "PHISHAGENT_MODEL_TIMEOUT_SECONDS": ("model", "timeout_seconds"),
+    "PHISHAGENT_NUM_GPU": ("model", "num_gpu"),
     "PHISHAGENT_CONVERSATION_MAX_TURNS": ("conversation", "max_turns"),
     "PHISHAGENT_SCORING_JUDGE_MODEL": ("scoring", "judge_model"),
     "PHISHAGENT_OUTPUT_BASE_DIR": ("output", "base_dir"),
@@ -86,7 +88,7 @@ def _apply_env_overrides(data: dict) -> dict:
             try:
                 if field in ("temperature", "judge_temperature", "turn_delay_seconds"):
                     data[section][field] = float(value)
-                elif field in ("max_tokens", "timeout_seconds", "max_turns"):
+                elif field in ("max_tokens", "timeout_seconds", "max_turns", "num_gpu"):
                     data[section][field] = int(value)
                 elif field in ("early_termination", "save_conversations", "save_csv"):
                     data[section][field] = value.lower() in ("true", "1", "yes")

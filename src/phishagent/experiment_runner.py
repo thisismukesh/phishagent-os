@@ -45,6 +45,7 @@ class ExperimentRunner:
         self.llm = llm or OllamaClient(
             base_url=config.model.ollama_url,
             timeout=config.model.timeout_seconds,
+            num_gpu=config.model.num_gpu,
         )
         self.scorer = ConversationScorer(self.llm, config.scoring)
 

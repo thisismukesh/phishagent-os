@@ -121,6 +121,7 @@ def interactive_single_run(app_config: AppConfig) -> None:
     llm = OllamaClient(
         base_url=app_config.model.ollama_url,
         timeout=app_config.model.timeout_seconds,
+        num_gpu=app_config.model.num_gpu,
     )
     if not llm.is_available():
         console.print("[red]✗ Ollama is not reachable. Run 'ollama serve' first.[/red]")
@@ -277,6 +278,7 @@ def interactive_batch_run(app_config: AppConfig) -> None:
     llm = OllamaClient(
         base_url=app_config.model.ollama_url,
         timeout=app_config.model.timeout_seconds,
+        num_gpu=app_config.model.num_gpu,
     )
     if not llm.is_available():
         console.print("[red]✗ Ollama is not reachable. Run 'ollama serve' first.[/red]")

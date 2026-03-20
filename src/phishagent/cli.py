@@ -13,7 +13,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 from phishagent.attacker_agent import AttackerAgent
 from phishagent.config import AppConfig, ConversationConfig, load_config
 from phishagent.conversation_engine import ConversationEngine
-from phishagent.llm_client import OllamaClient
+from phishagent.llm_client import OllamaClient, detect_cuda
 from phishagent.victim_agent import VictimAgent
 from phishagent.models import (
     AttackGoal,
@@ -99,6 +99,7 @@ def run(ctx, profile, strategy, scenario, goal, model, turns, output):
     llm = OllamaClient(
         base_url=app_config.model.ollama_url,
         timeout=app_config.model.timeout_seconds,
+        num_gpu=app_config.model.num_gpu,
     )
 
     if not llm.is_available():
@@ -242,6 +243,7 @@ def experiment(ctx, experiment_config, model, repetitions, output):
     llm = OllamaClient(
         base_url=app_config.model.ollama_url,
         timeout=app_config.model.timeout_seconds,
+        num_gpu=app_config.model.num_gpu,
     )
     if not llm.is_available():
         console.print("[red]Ollama is not reachable. Run 'ollama serve' first.[/red]")
@@ -288,11 +290,25 @@ def experiment(ctx, experiment_config, model, repetitions, output):
 def status(ctx):
     """Check system status (Ollama connectivity, available models)."""
     app_config: AppConfig = ctx.obj["config"]
-    client = OllamaClient(base_url=app_config.model.ollama_url)
+    client = OllamaClient(
+        base_url=app_config.model.ollama_url,
+        num_gpu=app_config.model.num_gpu,
+    )
 
     console.print("[bold]PhishAgent-OS System Status[/bold]")
     console.print(f"  Config model: {app_config.model.name}")
     console.print(f"  Ollama URL: {app_config.model.ollama_url}")
+
+    # GPU status
+    cuda = client.cuda_info
+    if cuda["available"]:
+        console.print(f"  [green]✓ CUDA GPU detected ({cuda['count']} device(s))[/green]")
+        for dev in cuda["devices"]:
+            console.print(f"    • {dev}")
+        console.print(f"  GPU layers (num_gpu): {client._num_gpu}")
+    else:
+        console.print("  [yellow]No CUDA GPU detected — CPU-only mode[/yellow]")
+        console.print("  [dim]Set PHISHAGENT_NUM_GPU=0 to suppress GPU offload attempts[/dim]")
 
     if client.is_available():
         console.print("  [green]✓ Ollama is running[/green]")
@@ -405,6 +421,7 @@ def benchmark(ctx, suite, model, output, skip_run, results_dir):
         llm = OllamaClient(
             base_url=app_config.model.ollama_url,
             timeout=app_config.model.timeout_seconds,
+            num_gpu=app_config.model.num_gpu,
         )
         if not llm.is_available():
             console.print("[red]Ollama is not reachable. Run 'ollama serve' first.[/red]")

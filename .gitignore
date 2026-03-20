@@ -1,5 +1,5 @@
 # Output directories (experiment results, conversations)
-output/
+# output/
 
 # Python
 __pycache__/
@@ -29,3 +29,14 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+.copilot
+.lightning_studio
+.claude/
+
+.vscode-server
+.cursor-server
+.windsurf-server
+
+.claude.json
+.wget-hsts
