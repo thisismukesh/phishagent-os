@@ -663,9 +663,9 @@ def _print_combo_table(combos: list[dict]) -> None:
         console.print("  (no data)")
         return
     for i, combo in enumerate(combos, 1):
-        traits_str = ", ".join(f"{k}={v}" for k, v in combo["traits"].items())
+        traits_str = "  |  ".join(f"{k}: {v}" for k, v in combo["traits"].items())
         console.print(
-            f"  {i}. [{traits_str}]  "
+            f"  {i}. {traits_str}  —  "
             f"ASR={combo['asr']:.1%}  "
             f"refusal={combo['refusal_rate']:.1%}  "
             f"suspicion={combo['suspicion_rate']:.1%}  "
