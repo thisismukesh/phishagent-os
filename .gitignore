@@ -1,5 +1,4 @@
-# Output directories — all future experiment runs are local only.
-# The committed output/experiments/strategy_comparison_216/ serves as an example.
+# Output directories — folders tracked, contents local only.
 output/
 
 # Python
