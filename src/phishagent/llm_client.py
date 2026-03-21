@@ -1,4 +1,4 @@
-"""Ollama HTTP client. All communication with the locally-running Ollama instance.
+"""Ollama HTTP client. All communication with the Ollama instance (local or remote).
 
 No other module touches the network.
 """
@@ -6,6 +6,7 @@ No other module touches the network.
 import os
 import subprocess
 import time
+from abc import ABC, abstractmethod
 from typing import Optional
 
 import httpx
@@ -64,14 +65,57 @@ class LLMResponseError(LLMClientError):
     pass
 
 
-# ── Client ──────────────────────────────────────────────────────────────────────
+# ── Retry configuration ──────────────────────────────────────────────────────────
 
-# Retry configuration
 _MAX_RETRIES = 3
 _BACKOFF_SECONDS = [1, 2, 4]
 
 
-class OllamaClient:
+# ── Base Client ─────────────────────────────────────────────────────────────────
+
+
+class BaseLLMClient(ABC):
+    """Abstract base for all LLM provider clients."""
+
+    @abstractmethod
+    def generate(
+        self,
+        model: str,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.7,
+        max_tokens: int = 512,
+    ) -> LLMResponse:
+        """Single-prompt completion."""
+
+    @abstractmethod
+    def chat(
+        self,
+        model: str,
+        messages: list[dict],
+        system: str = "",
+        temperature: float = 0.7,
+        max_tokens: int = 512,
+    ) -> LLMResponse:
+        """Multi-turn chat completion."""
+
+    @abstractmethod
+    def is_available(self) -> bool:
+        """Return True if the backend is reachable."""
+
+    @abstractmethod
+    def list_models(self) -> list[str]:
+        """Return a list of available model names."""
+
+    def ensure_model(self, model: str) -> bool:
+        """Return True if *model* is available. Subclasses may override."""
+        return any(model == m or m.startswith(model.split(":")[0] + ":") for m in self.list_models())
+
+
+# ── Ollama Client ────────────────────────────────────────────────────────────────
+
+
+class OllamaClient(BaseLLMClient):
     def __init__(
         self,
         base_url: str = "http://localhost:11434",
@@ -194,12 +238,6 @@ class OllamaClient:
             logger.error(f"Failed to list models: {e}")
             return []
 
-    def ensure_model(self, model: str) -> bool:
-        """Check if model is available locally. Return False if not pulled."""
-        models = self.list_models()
-        # Check exact match or prefix match (e.g., "mistral:7b" matches "mistral:7b-instruct-...")
-        return any(model == m or m.startswith(model.split(":")[0] + ":") for m in models)
-
     def _request_with_retry(self, method: str, path: str, payload: dict) -> dict:
         """Execute an HTTP request with retry logic.
 
@@ -261,3 +299,15 @@ class OllamaClient:
                 raise last_error
 
         raise last_error  # type: ignore[misc]
+
+
+def create_client(config) -> BaseLLMClient:
+    """Instantiate an OllamaClient from a ModelConfig.
+
+    Ollama can point at a local instance or a remote GPU host — just set ollama_url.
+    """
+    return OllamaClient(
+        base_url=config.ollama_url,
+        timeout=config.timeout_seconds,
+        num_gpu=config.num_gpu,
+    )

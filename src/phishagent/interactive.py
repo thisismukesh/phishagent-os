@@ -25,7 +25,7 @@ from phishagent.attacker_agent import AttackerAgent
 from phishagent.config import AppConfig, ConversationConfig
 from phishagent.conversation_engine import ConversationEngine
 from phishagent.experiment_runner import ExperimentRunner
-from phishagent.llm_client import OllamaClient
+from phishagent.llm_client import BaseLLMClient, create_client
 from phishagent.models import (
     AttackGoal,
     AttackStrategy,
@@ -117,14 +117,10 @@ def interactive_single_run(app_config: AppConfig) -> None:
     console.print()
     console.print(Panel("[bold]Run Single Conversation[/bold]", box=box.SIMPLE_HEAD))
 
-    # Verify Ollama is available before asking a dozen questions
-    llm = OllamaClient(
-        base_url=app_config.model.ollama_url,
-        timeout=app_config.model.timeout_seconds,
-        num_gpu=app_config.model.num_gpu,
-    )
+    # Verify LLM backend is available before asking a dozen questions
+    llm = create_client(app_config.model)
     if not llm.is_available():
-        console.print("[red]✗ Ollama is not reachable. Run 'ollama serve' first.[/red]")
+        console.print(f"[red]✗ Ollama is not reachable at {app_config.model.ollama_url}. Run 'ollama serve'.[/red]")
         return
 
     available_models = llm.list_models()
@@ -201,7 +197,7 @@ def interactive_single_run(app_config: AppConfig) -> None:
 
 def _execute_single_run(
     app_config: AppConfig,
-    llm: OllamaClient,
+    llm: BaseLLMClient,
     model_name: str,
     victim_profile: VictimProfile,
     attacker_config: AttackerConfig,
@@ -274,14 +270,10 @@ def interactive_batch_run(app_config: AppConfig) -> None:
         console.print(f"[red]Failed to load config: {e}[/red]")
         return
 
-    # Check Ollama
-    llm = OllamaClient(
-        base_url=app_config.model.ollama_url,
-        timeout=app_config.model.timeout_seconds,
-        num_gpu=app_config.model.num_gpu,
-    )
+    # Check LLM backend
+    llm = create_client(app_config.model)
     if not llm.is_available():
-        console.print("[red]✗ Ollama is not reachable. Run 'ollama serve' first.[/red]")
+        console.print(f"[red]✗ Ollama is not reachable at {app_config.model.ollama_url}. Run 'ollama serve'.[/red]")
         return
 
     available_models = llm.list_models()
@@ -420,11 +412,11 @@ def _pick_experiment_config() -> Optional[str]:
 
 
 def interactive_status(app_config: AppConfig) -> None:
-    """Show Ollama connectivity and available models."""
+    """Show LLM backend connectivity and available models."""
     console.print()
     console.print(Panel("[bold]System Status[/bold]", box=box.SIMPLE_HEAD))
 
-    client = OllamaClient(base_url=app_config.model.ollama_url)
+    client = create_client(app_config.model)
 
     table = Table(box=box.ROUNDED)
     table.add_column("Item", style="dim")

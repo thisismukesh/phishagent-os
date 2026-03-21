@@ -14,7 +14,7 @@ from typing import Callable, Optional
 from phishagent.attacker_agent import AttackerAgent
 from phishagent.config import AppConfig
 from phishagent.conversation_engine import ConversationEngine
-from phishagent.llm_client import OllamaClient
+from phishagent.llm_client import BaseLLMClient, create_client
 from phishagent.models import (
     ConversationOutcome,
     ConversationResult,
@@ -39,14 +39,10 @@ CSV_COLUMNS = [
 
 
 class ExperimentRunner:
-    def __init__(self, config: AppConfig, llm: Optional[OllamaClient] = None):
+    def __init__(self, config: AppConfig, llm: Optional[BaseLLMClient] = None):
         """Initialize with app config. Creates LLM client, scorer."""
         self.config = config
-        self.llm = llm or OllamaClient(
-            base_url=config.model.ollama_url,
-            timeout=config.model.timeout_seconds,
-            num_gpu=config.model.num_gpu,
-        )
+        self.llm = llm or create_client(config.model)
         self.scorer = ConversationScorer(self.llm, config.scoring)
 
     def run(

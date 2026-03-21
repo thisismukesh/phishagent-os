@@ -1,10 +1,13 @@
 model:
   name: "mistral:7b"
+  # Point ollama_url at a local or remote Ollama instance.
+  # Local:  http://localhost:11434  (default)
+  # Remote: http://your-gpu-host:11434
   ollama_url: "http://localhost:11434"
+  num_gpu: null  # null = auto-detect (all layers on GPU when CUDA available), 0 = force CPU
   temperature: 0.7
   max_tokens: 512
   timeout_seconds: 120
-  num_gpu: null  # null = auto-detect (all layers on GPU when CUDA available), 0 = force CPU
 
 conversation:
   max_turns: 10

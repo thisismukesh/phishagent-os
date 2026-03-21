@@ -1,5 +1,6 @@
-# Output directories (experiment results, conversations)
-# output/
+# Output directories — all future experiment runs are local only.
+# The committed output/experiments/strategy_comparison_216/ serves as an example.
+output/
 
 # Python
 __pycache__/

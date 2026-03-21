@@ -13,7 +13,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskPr
 from phishagent.attacker_agent import AttackerAgent
 from phishagent.config import AppConfig, ConversationConfig, load_config
 from phishagent.conversation_engine import ConversationEngine
-from phishagent.llm_client import OllamaClient, detect_cuda
+from phishagent.llm_client import create_client, detect_cuda
 from phishagent.victim_agent import VictimAgent
 from phishagent.models import (
     AttackGoal,
@@ -96,14 +96,10 @@ def run(ctx, profile, strategy, scenario, goal, model, turns, output):
     )
 
     # Create LLM client
-    llm = OllamaClient(
-        base_url=app_config.model.ollama_url,
-        timeout=app_config.model.timeout_seconds,
-        num_gpu=app_config.model.num_gpu,
-    )
+    llm = create_client(app_config.model)
 
     if not llm.is_available():
-        console.print("[red]Ollama is not reachable. Run 'ollama serve' first.[/red]")
+        console.print(f"[red]Ollama is not reachable at {app_config.model.ollama_url}. Run 'ollama serve'.[/red]")
         sys.exit(1)
 
     # Print header
@@ -239,14 +235,10 @@ def experiment(ctx, experiment_config, model, repetitions, output):
     )
     console.print(f"[PhishAgent-OS] Model: {model_name}")
 
-    # Check Ollama
-    llm = OllamaClient(
-        base_url=app_config.model.ollama_url,
-        timeout=app_config.model.timeout_seconds,
-        num_gpu=app_config.model.num_gpu,
-    )
+    # Create LLM client
+    llm = create_client(app_config.model)
     if not llm.is_available():
-        console.print("[red]Ollama is not reachable. Run 'ollama serve' first.[/red]")
+        console.print(f"[red]Ollama is not reachable at {app_config.model.ollama_url}. Run 'ollama serve'.[/red]")
         sys.exit(1)
 
     # Run experiment with progress bar
@@ -288,12 +280,9 @@ def experiment(ctx, experiment_config, model, repetitions, output):
 @main.command()
 @click.pass_context
 def status(ctx):
-    """Check system status (Ollama connectivity, available models)."""
+    """Check system status (LLM connectivity, available models)."""
     app_config: AppConfig = ctx.obj["config"]
-    client = OllamaClient(
-        base_url=app_config.model.ollama_url,
-        num_gpu=app_config.model.num_gpu,
-    )
+    client = create_client(app_config.model)
 
     console.print("[bold]PhishAgent-OS System Status[/bold]")
     console.print(f"  Config model: {app_config.model.name}")
@@ -417,14 +406,10 @@ def benchmark(ctx, suite, model, output, skip_run, results_dir):
             output_dir=output_dir,
         )
 
-        # Check Ollama
-        llm = OllamaClient(
-            base_url=app_config.model.ollama_url,
-            timeout=app_config.model.timeout_seconds,
-            num_gpu=app_config.model.num_gpu,
-        )
+        # Create LLM client
+        llm = create_client(app_config.model)
         if not llm.is_available():
-            console.print("[red]Ollama is not reachable. Run 'ollama serve' first.[/red]")
+            console.print(f"[red]Ollama is not reachable at {app_config.model.ollama_url}. Run 'ollama serve'.[/red]")
             sys.exit(1)
 
         console.print(f"[bold][PhishAgent-OS] Benchmark: {experiment_id}[/bold]")

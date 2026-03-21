@@ -25,8 +25,8 @@ def runner():
 
 
 @pytest.fixture
-def mock_ollama():
-    """Mock OllamaClient that returns deterministic responses."""
+def mock_llm():
+    """Mock LLM client that returns deterministic responses."""
     mock = MagicMock()
     mock.is_available.return_value = True
     mock.list_models.return_value = ["mistral:7b", "llama3:8b"]
@@ -39,9 +39,9 @@ def mock_ollama():
 
 
 class TestStatusCommand:
-    @patch("phishagent.cli.OllamaClient")
-    def test_status_ollama_available(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_status_ollama_available(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
         instance.list_models.return_value = ["mistral:7b"]
 
@@ -50,18 +50,18 @@ class TestStatusCommand:
         assert "Ollama is running" in result.output
         assert "mistral:7b" in result.output
 
-    @patch("phishagent.cli.OllamaClient")
-    def test_status_ollama_unavailable(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_status_ollama_unavailable(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = False
 
         result = runner.invoke(main, ["status"])
         assert result.exit_code == 0
         assert "not reachable" in result.output
 
-    @patch("phishagent.cli.OllamaClient")
-    def test_status_no_models(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_status_no_models(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
         instance.list_models.return_value = []
 
@@ -76,10 +76,9 @@ class TestRunCommand:
     @patch("phishagent.cli.ConversationEngine")
     @patch("phishagent.cli.VictimAgent")
     @patch("phishagent.cli.AttackerAgent")
-    @patch("phishagent.cli.OllamaClient")
-    def test_run_success(self, MockClient, MockAttacker, MockVictim, MockEngine, MockScorer, MockDump, runner):
-        # Setup mocks
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_run_success(self, mock_create, MockAttacker, MockVictim, MockEngine, MockScorer, MockDump, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
 
         mock_result = MagicMock()
@@ -110,9 +109,9 @@ class TestRunCommand:
         assert result.exit_code == 0
         assert "Starting conversation" in result.output
 
-    @patch("phishagent.cli.OllamaClient")
-    def test_run_ollama_unavailable(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_run_ollama_unavailable(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = False
 
         result = runner.invoke(main, [
@@ -140,9 +139,9 @@ class TestRunCommand:
     @patch("phishagent.cli.ConversationEngine")
     @patch("phishagent.cli.VictimAgent")
     @patch("phishagent.cli.AttackerAgent")
-    @patch("phishagent.cli.OllamaClient")
-    def test_run_scoring_failure_handled(self, MockClient, MockAttacker, MockVictim, MockEngine, MockScorer, MockDump, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_run_scoring_failure_handled(self, mock_create, MockAttacker, MockVictim, MockEngine, MockScorer, MockDump, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
 
         mock_result = MagicMock()
@@ -171,9 +170,9 @@ class TestRunCommand:
 
 class TestExperimentCommand:
     @patch("phishagent.cli.ExperimentRunner")
-    @patch("phishagent.cli.OllamaClient")
-    def test_experiment_success(self, MockClient, MockRunner, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_experiment_success(self, mock_create, MockRunner, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
 
         mock_result = MagicMock()
@@ -193,9 +192,9 @@ class TestExperimentCommand:
         assert result.exit_code == 0
         assert "Starting batch experiment" in result.output
 
-    @patch("phishagent.cli.OllamaClient")
-    def test_experiment_ollama_unavailable(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_experiment_ollama_unavailable(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = False
 
         result = runner.invoke(main, [
@@ -213,10 +212,10 @@ class TestExperimentCommand:
         assert result.exit_code != 0
 
     @patch("phishagent.cli.ExperimentRunner")
-    @patch("phishagent.cli.OllamaClient")
-    def test_experiment_no_vary(self, MockClient, MockRunner, runner):
+    @patch("phishagent.cli.create_client")
+    def test_experiment_no_vary(self, mock_create, MockRunner, runner):
         """Test experiment with no factorial variation (single profile)."""
-        instance = MockClient.return_value
+        instance = mock_create.return_value
         instance.is_available.return_value = True
 
         mock_result = MagicMock()
@@ -255,9 +254,9 @@ class TestExperimentCommand:
 
         assert result.exit_code == 0
 
-    @patch("phishagent.cli.OllamaClient")
-    def test_experiment_no_attacker_configs(self, MockClient, runner):
-        instance = MockClient.return_value
+    @patch("phishagent.cli.create_client")
+    def test_experiment_no_attacker_configs(self, mock_create, runner):
+        instance = mock_create.return_value
         instance.is_available.return_value = True
 
         config = {
@@ -286,5 +285,5 @@ class TestCustomConfig:
     def test_custom_config_path(self, runner):
         """Test passing a custom config file."""
         result = runner.invoke(main, ["--config", "config/default.yaml", "status"])
-        # Should at least not crash; Ollama may or may not be available
+        # Should at least not crash; backend may or may not be available
         assert result.exit_code == 0 or "not reachable" in result.output or True
