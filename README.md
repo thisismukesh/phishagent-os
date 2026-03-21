@@ -419,6 +419,68 @@ phishagent-os/
 
 ---
 
+## Example Experiment
+
+The first experiment run with PhishAgent-OS is included in [`examples/strategy_comparison_216/`](examples/strategy_comparison_216/). It was run on [Lightning.ai](https://lightning.ai) using an **NVIDIA L4 GPU** with `mistral:7b` as both the conversation model and judge (`llama3.2`).
+
+### Setup
+
+**216 conversations** — 6 social engineering strategies × 12 victim profiles × 3 repetitions. All conversations targeted a single goal: `click_link`.
+
+Victim profiles were generated factorially by varying three dimensions:
+
+| Factor | Values tested |
+|--------|--------------|
+| Agreeableness | 0.2 (low), 0.8 (high) |
+| Impulsivity | 0.2 (low), 0.8 (high) |
+| Security awareness | low, medium, high |
+
+All six strategies were tested: `authority`, `reciprocity`, `urgency`, `social_proof`, `rapport`, `flattery`.
+
+To reproduce:
+
+```bash
+phishagent experiment --experiment-config config/experiments/strategy_comparison_216.yaml
+```
+
+### Results
+
+**Overall attack success rate: 52.8%** (114/216 conversations ended in compliance or partial compliance)
+
+**By strategy:**
+
+| Strategy | ASR | Suspicion rate | Mean turns |
+|----------|-----|---------------|------------|
+| social_proof | **72.2%** | 27.8% | 2.72 |
+| urgency | 52.8% | 47.2% | 1.89 |
+| reciprocity | 52.8% | 33.3% | 3.24 |
+| flattery | 50.0% | 25.0% | 3.73 |
+| rapport | 47.2% | 44.4% | 5.00 |
+| authority | 41.7% | 55.6% | 2.08 |
+
+**By security awareness:**
+
+| Awareness | ASR |
+|-----------|-----|
+| low | 56.9% |
+| medium | 65.3% |
+| high | 36.1% |
+
+**Trait correlations with compliance:**
+
+Agreeableness was the only trait with a meaningful correlation to attack success (r = 0.32). Impulsivity showed a slight negative correlation (r = −0.04). All other traits (conscientiousness, neuroticism, openness, extraversion) showed no correlation.
+
+**Key takeaways:**
+- Social proof was by far the most effective strategy, especially against medium and high security awareness victims
+- Authority triggered the most suspicion (55.6% suspicion rate) — the LLM victim was more alert to overt power claims
+- Rapport took the most turns (avg 5.0) but had a lower success rate — relationship-building did not pay off within 10 turns
+- High security awareness roughly halved the attack success rate compared to medium awareness
+- Conversations resolved quickly — mean 3.06 turns to outcome
+
+The full benchmark report is at [`examples/strategy_comparison_216/benchmark_report.json`](examples/strategy_comparison_216/benchmark_report.json) and all 216 conversation transcripts are in the same folder.
+
+---
+
 ## Running Tests
 
 ```bash
